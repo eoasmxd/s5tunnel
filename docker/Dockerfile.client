@@ -1,0 +1,23 @@
+# 构建阶段
+FROM --platform=$BUILDPLATFORM golang:alpine AS builder
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+WORKDIR /app
+COPY . .
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} go build -ldflags "-s -w" -o /bin/s5tc ./cmd/s5tc
+
+# 运行阶段
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates tzdata
+COPY --from=builder /bin/s5tc /usr/local/bin/s5tc
+COPY conf/s5tc.ini /etc/s5tunnel/s5tc.ini
+COPY conf/pac.txt /etc/s5tunnel/pac.txt
+
+VOLUME ["/etc/s5tunnel"]
+EXPOSE 1080
+
+ENTRYPOINT ["s5tc"]
+CMD ["-c", "/etc/s5tunnel/s5tc.ini"]
+
