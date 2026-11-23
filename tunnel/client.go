@@ -45,7 +45,6 @@ func HandleMixedProxy(conn net.Conn, cfg ClientConfig) {
 	handleHTTPProxy(conn, br, cfg)
 }
 
-// ForwardTarget 通过加密隧道转发已确定目标地址的连接。
 func ForwardTarget(conn net.Conn, target string, cfg ClientConfig) {
 	tlsConn, err := dialTunnel(target, cfg)
 	if err != nil {

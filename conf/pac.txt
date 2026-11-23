@@ -1,26 +1,27 @@
 var proxy = typeof __PROXY__ !== 'undefined' ? __PROXY__ : 'PROXY 127.0.0.1:1080; SOCKS5 127.0.0.1:1080; DIRECT';
 var direct = 'DIRECT';
 
+// Default action: direct (only listed targets use tunnel); set to proxy to route all traffic by default
 // 默认策略：direct（仅代理列表走隧道，适合访问家中内网）；如需默认全走代理可改为 proxy
 var defaultAction = direct;
 
-// 始终走代理的网段（如家中内网网段）
+// Networks routed through tunnel (e.g., home LAN) / 始终走代理的网段（如家中内网网段）
 var proxyNetworks = [
     ['192.168.1.0', '255.255.255.0']
 ];
 
-// 始终走代理的域名或内网主机名（匹配自身及子域名）
+// Domains or hostnames routed through tunnel (matches exact and subdomains) / 始终走代理的域名或内网主机名（含子域名）
 var proxyDomains = [
     'home.arpa',
     'lan'
 ];
 
-// 始终直连的网段（优先级高于 proxyNetworks，可用于排除当前所在局域网或冲突 IP）
+// Networks bypassed directly (higher priority than proxyNetworks) / 始终直连的网段（优先级高于 proxyNetworks，可排除本地冲突 IP）
 var directNetworks = [
     // ['192.168.1.1', '255.255.255.255']
 ];
 
-// 始终直连的域名（优先级高于 proxyDomains）
+// Domains bypassed directly (higher priority than proxyDomains) / 始终直连的域名（优先级高于 proxyDomains）
 var directDomains = [
 ];
 

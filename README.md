@@ -34,7 +34,8 @@ S5Tunnel provides three standalone binaries: **S5Tunnel Server** (`s5ts`), **S5T
 `s5ts.ini`:
 ```ini
 [common]
-bind_addr = 0.0.0.0:3017
+bind_addr = 0.0.0.0
+bind_port = 3017
 token = your_secure_token
 # tls_cert_file = ./server.crt
 # tls_key_file = ./server.key
@@ -50,9 +51,11 @@ Run:
 `s5tc.ini`:
 ```ini
 [common]
-local_addr = 127.0.0.1:1080
-server_addr = your.domain.or.ip:3017
+server_addr = your.domain.or.ip
+server_port = 3017
 token = your_secure_token
+local_addr = 127.0.0.1
+local_port = 1080
 ```
 
 - **S5Tunnel Client (CLI)**:
@@ -101,15 +104,18 @@ When your home broadband has a public IP (paired with DDNS if dynamic), **only o
 1. **Home `S5Tunnel Server` Config (`s5ts.ini`)** (running on your home NAS, router, or Docker host):
    ```ini
    [common]
-   bind_addr = 0.0.0.0:3017
+   bind_addr = 0.0.0.0
+   bind_port = 3017
    token = your_strong_s5t_token
    ```
 2. **Laptop `S5Tunnel Client` Config (`s5tc.ini`)**:
    ```ini
    [common]
-   local_addr = 127.0.0.1:1080
-   server_addr = home.yourdomain.com:3017
+   server_addr = home.yourdomain.com
+   server_port = 3017
    token = your_strong_s5t_token
+   local_addr = 127.0.0.1
+   local_port = 1080
    ```
 3. **Laptop PAC Rules (`pac.txt`)** (keep `defaultAction = direct` so regular web traffic goes direct without consuming home upload bandwidth, and only your home subnet/domains enter the tunnel):
    ```javascript
@@ -151,7 +157,8 @@ When your home broadband is behind CGNAT with no public IP, you do not need to c
 1. **Home `S5Tunnel Server` Config (`s5ts.ini`)** (only listens on loopback; never exposed to LAN/WAN directly):
    ```ini
    [common]
-   bind_addr = 127.0.0.1:3017
+   bind_addr = 127.0.0.1
+   bind_port = 3017
    token = your_strong_s5t_token
    ```
 2. **Public VPS `L4Tunnel Server` Config (`l4ts.ini`)** (receives the reverse tunnel control channel from home):
@@ -176,9 +183,11 @@ When your home broadband is behind CGNAT with no public IP, you do not need to c
 4. **Laptop `S5Tunnel Client` Config (`s5tc.ini`)** (connects to the `S5Tunnel Server` entry exposed on the VPS, paired with the same `pac.txt` as Practice 1):
    ```ini
    [common]
-   local_addr = 127.0.0.1:1080
-   server_addr = your.vps.ip:3017
+   server_addr = your.vps.ip
+   server_port = 3017
    token = your_strong_s5t_token
+   local_addr = 127.0.0.1
+   local_port = 1080
    ```
 
 The VPS port `3017` exposes only a single TLS-encrypted and Token-authenticated `S5Tunnel Server` entry—no internal IP or application UI is ever exposed publicly, and a single rule unlocks access to your entire home subnet.
@@ -188,7 +197,7 @@ The VPS port `3017` exposes only a single TLS-encrypted and Token-authenticated 
 Because both `S5Tunnel Server` and `L4Tunnel Server` run over standard TLS and their clients automatically send TLS SNI when configured with domain names, **you can multiplex the `L4Tunnel` control channel, the `S5Tunnel` entry point, and your regular HTTPS websites onto the single public port `443` using Nginx's Layer-4 `stream` module and `ssl_preread`**—no need to open `3007` or `3017` on your public firewall:
 
 1. **Server Setup** (loopback-only listeners; firewall only exposes port `443`):
-   - **Home `S5Tunnel Server` (`s5ts.ini`)**: `bind_addr = 127.0.0.1:3017`
+   - **Home `S5Tunnel Server` (`s5ts.ini`)**: `bind_addr = 127.0.0.1`, `bind_port = 3017`
    - **Public VPS `L4Tunnel Server` (`l4ts.ini`)** (when paired with L4Tunnel behind CGNAT): `bind_addr = 127.0.0.1`, `bind_port = 3007` (with home `L4Tunnel Client` forwarding local `3017` to port `3017` on the VPS)
 2. **Public Nginx Configuration (top-level `stream` block in `nginx.conf`)**:
    ```nginx
@@ -238,9 +247,11 @@ Because both `S5Tunnel Server` and `L4Tunnel Server` run over standard TLS and t
    - **Laptop `S5Tunnel Client` (`s5tc.ini`)**:
      ```ini
      [common]
-     local_addr = 127.0.0.1:1080
-     server_addr = s5t.yourdomain.com:443
+     server_addr = s5t.yourdomain.com
+     server_port = 443
      token = your_strong_s5t_token
+     local_addr = 127.0.0.1
+     local_port = 1080
      ```
 
 ---
@@ -251,7 +262,8 @@ Because both `S5Tunnel Server` and `L4Tunnel Server` run over standard TLS and t
 
 ```ini
 [common]
-bind_addr = 0.0.0.0:3017
+bind_addr = 0.0.0.0
+bind_port = 3017
 token = 12345678
 # tls_cert_file = ./server.crt
 # tls_key_file = ./server.key
@@ -261,11 +273,14 @@ token = 12345678
 
 ```ini
 [common]
-local_addr = 127.0.0.1:1080
-# Linux transparent proxy (iptables/nftables REDIRECT, Linux only)
-# redir_addr = 0.0.0.0:1081
-server_addr = 127.0.0.1:3017
+server_addr = 127.0.0.1
+server_port = 3017
 token = 12345678
+local_addr = 127.0.0.1
+local_port = 1080
+# Linux transparent proxy (iptables/nftables REDIRECT, Linux only)
+# redir_addr = 0.0.0.0
+# redir_port = 1081
 ```
 
 ### PAC Rules ([conf/pac.txt](conf/pac.txt))

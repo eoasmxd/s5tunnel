@@ -15,7 +15,6 @@ func GetAuthKey(token string, timestamp int64) string {
 	return hex.EncodeToString(h[:])
 }
 
-// CheckAuth 校验时间戳与认证摘要，token 为空时直接放行。
 func CheckAuth(token, timestampStr, authKey string) bool {
 	if token == "" {
 		return true

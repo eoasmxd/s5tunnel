@@ -1,4 +1,3 @@
-# 构建阶段
 FROM --platform=$BUILDPLATFORM golang:alpine AS builder
 ARG TARGETOS
 ARG TARGETARCH
@@ -8,7 +7,6 @@ WORKDIR /app
 COPY . .
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} go build -ldflags "-s -w" -o /bin/s5ts ./cmd/s5ts
 
-# 运行阶段
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates tzdata
 COPY --from=builder /bin/s5ts /usr/local/bin/s5ts
