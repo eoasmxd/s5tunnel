@@ -59,7 +59,6 @@ type internetPerConnOptionList struct {
 	pOptions      uintptr
 }
 
-// sysProxyManager 通过 WinINet API 管理系统代理设置并维护原始状态备份。
 type sysProxyManager struct {
 	mu           sync.Mutex
 	hasBackup    bool

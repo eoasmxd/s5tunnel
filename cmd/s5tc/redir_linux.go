@@ -16,7 +16,6 @@ const (
 	ip6tSoOriginalDst = 80
 )
 
-// getOrigDst 通过 Linux SO_ORIGINAL_DST 获取重定向连接的原始目标地址。
 func getOrigDst(conn net.Conn) (string, error) {
 	tcpConn, ok := conn.(*net.TCPConn)
 	if !ok {

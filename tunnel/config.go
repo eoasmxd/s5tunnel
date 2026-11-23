@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -29,18 +31,37 @@ func LoadClientConfig(path string) (ClientConfig, error) {
 	if err != nil {
 		return ClientConfig{}, err
 	}
+
+	serverHost, err := validateHostOnly("server_addr", "server_port", sec["server_addr"])
+	if err != nil {
+		return ClientConfig{}, err
+	}
+	if serverHost == "" {
+		return ClientConfig{}, errors.New("server_addr cannot be empty")
+	}
+	serverPort, err := parseRequiredPort("server_port", sec["server_port"], 3017)
+	if err != nil {
+		return ClientConfig{}, err
+	}
+
+	localAddr, err := parseOptionalListenAddr("local_addr", "local_port", sec["local_addr"], sec["local_port"], "127.0.0.1")
+	if err != nil {
+		return ClientConfig{}, err
+	}
+	redirAddr, err := parseOptionalListenAddr("redir_addr", "redir_port", sec["redir_addr"], sec["redir_port"], "0.0.0.0")
+	if err != nil {
+		return ClientConfig{}, err
+	}
+
 	cfg := ClientConfig{
-		LocalAddr:  sec["local_addr"],
-		RedirAddr:  sec["redir_addr"],
-		ServerAddr: sec["server_addr"],
+		LocalAddr:  localAddr,
+		RedirAddr:  redirAddr,
+		ServerAddr: net.JoinHostPort(serverHost, strconv.Itoa(serverPort)),
 		Token:      sec["token"],
 		PACFile:    filepath.Join(filepath.Dir(path), "pac.txt"),
 	}
 	if cfg.LocalAddr == "" && cfg.RedirAddr == "" {
 		cfg.LocalAddr = "127.0.0.1:1080"
-	}
-	if cfg.ServerAddr == "" {
-		return ClientConfig{}, errors.New("server_addr cannot be empty")
 	}
 	return cfg, nil
 }
@@ -68,19 +89,86 @@ func LoadServerConfig(path string) (ServerConfig, error) {
 	if err != nil {
 		return ServerConfig{}, err
 	}
+
+	bindHost, err := validateHostOnly("bind_addr", "bind_port", sec["bind_addr"])
+	if err != nil {
+		return ServerConfig{}, err
+	}
+	if bindHost == "" {
+		bindHost = "0.0.0.0"
+	}
+	bindPort, err := parseRequiredPort("bind_port", sec["bind_port"], 3017)
+	if err != nil {
+		return ServerConfig{}, err
+	}
+
 	cfg := ServerConfig{
-		BindAddr:    ":3017",
+		BindAddr:    net.JoinHostPort(bindHost, strconv.Itoa(bindPort)),
 		Token:       sec["token"],
 		TLSCertFile: sec["tls_cert_file"],
 		TLSKeyFile:  sec["tls_key_file"],
-	}
-	if v := sec["bind_addr"]; v != "" {
-		cfg.BindAddr = v
 	}
 	if (cfg.TLSCertFile == "") != (cfg.TLSKeyFile == "") {
 		return ServerConfig{}, errors.New("tls_cert_file and tls_key_file must be set together")
 	}
 	return cfg, nil
+}
+
+func validateHostOnly(addrKey, portKey, raw string) (string, error) {
+	host := strings.TrimSpace(raw)
+	if host == "" {
+		return "", nil
+	}
+	if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+		inner := host[1 : len(host)-1]
+		if net.ParseIP(inner) != nil {
+			return inner, nil
+		}
+	}
+	if net.ParseIP(host) != nil {
+		return host, nil
+	}
+	if _, _, err := net.SplitHostPort(host); err == nil {
+		return "", fmt.Errorf("%s should not include port; use %s instead", addrKey, portKey)
+	}
+	return host, nil
+}
+
+func parseRequiredPort(key, raw string, defaultPort int) (int, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return defaultPort, nil
+	}
+	port, err := strconv.Atoi(raw)
+	if err != nil || port < 1 || port > 65535 {
+		return 0, fmt.Errorf("invalid %s: %s", key, raw)
+	}
+	return port, nil
+}
+
+func parseOptionalListenAddr(addrKey, portKey, rawAddr, rawPort, defaultHost string) (string, error) {
+	host, err := validateHostOnly(addrKey, portKey, rawAddr)
+	if err != nil {
+		return "", err
+	}
+	rawPort = strings.TrimSpace(rawPort)
+	if rawPort == "" {
+		if host != "" {
+			return "", fmt.Errorf("%s must be set when %s is specified", portKey, addrKey)
+		}
+		return "", nil
+	}
+	port, err := strconv.Atoi(rawPort)
+	if err != nil || port < 0 || port > 65535 {
+		return "", fmt.Errorf("invalid %s: %s", portKey, rawPort)
+	}
+	if port == 0 {
+		return "", nil
+	}
+	if host == "" {
+		host = defaultHost
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port)), nil
 }
 
 func parseCommonIni(path string) (map[string]string, error) {

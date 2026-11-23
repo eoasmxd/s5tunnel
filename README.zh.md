@@ -35,7 +35,8 @@ S5Tunnel 包含三个独立程序：**S5Tunnel Server**（`s5ts`）、**S5Tunnel
 
 ```ini
 [common]
-bind_addr = 0.0.0.0:3017
+bind_addr = 0.0.0.0
+bind_port = 3017
 token = your_secure_token
 # tls_cert_file = ./server.crt
 # tls_key_file = ./server.key
@@ -53,9 +54,11 @@ token = your_secure_token
 
 ```ini
 [common]
-local_addr = 127.0.0.1:1080
-server_addr = your.domain.or.ip:3017
+server_addr = your.domain.or.ip
+server_port = 3017
 token = your_secure_token
+local_addr = 127.0.0.1
+local_port = 1080
 ```
 
 - **S5Tunnel Client（命令行）**：
@@ -104,15 +107,18 @@ docker run -d \
 1. **家中 `S5Tunnel Server` 配置（`s5ts.ini`）**（部署在家里 NAS、软路由或 Docker 容器中）：
    ```ini
    [common]
-   bind_addr = 0.0.0.0:3017
+   bind_addr = 0.0.0.0
+   bind_port = 3017
    token = your_strong_s5t_token
    ```
 2. **随身电脑 `S5Tunnel Client` 配置（`s5tc.ini`）**：
    ```ini
    [common]
-   local_addr = 127.0.0.1:1080
-   server_addr = home.yourdomain.com:3017
+   server_addr = home.yourdomain.com
+   server_port = 3017
    token = your_strong_s5t_token
+   local_addr = 127.0.0.1
+   local_port = 1080
    ```
 3. **随身电脑 PAC 规则（`pac.txt`）**（保持 `defaultAction = direct`，日常上网直连不绕家里上行带宽，只让命中家中内网的流量进入隧道）：
    ```javascript
@@ -154,7 +160,8 @@ docker run -d \
 1. **家中 `S5Tunnel Server` 配置（`s5ts.ini`）**（仅监听本机回环，不对外直接暴露）：
    ```ini
    [common]
-   bind_addr = 127.0.0.1:3017
+   bind_addr = 127.0.0.1
+   bind_port = 3017
    token = your_strong_s5t_token
    ```
 2. **公网 VPS 的 `L4Tunnel Server` 配置（`l4ts.ini`）**（接收家中内网的反向控制连接）：
@@ -179,9 +186,11 @@ docker run -d \
 4. **随身电脑 `S5Tunnel Client` 配置（`s5tc.ini`）**（连接公网 VPS 暴露出来的 `S5Tunnel Server` 入口，配合实践 1 中的 `pac.txt`）：
    ```ini
    [common]
-   local_addr = 127.0.0.1:1080
-   server_addr = your.vps.ip:3017
+   server_addr = your.vps.ip
+   server_port = 3017
    token = your_strong_s5t_token
+   local_addr = 127.0.0.1
+   local_port = 1080
    ```
 
 公网 VPS 的 `3017` 端口对外只暴露经过标准 TLS 加密与 Token 认证的 `S5Tunnel Server` 单一入口，不裸露任何内网 IP 与业务端口，只需一条穿透配置即可安全访问家中整个局域网。
@@ -191,7 +200,7 @@ docker run -d \
 由于 `S5Tunnel Server` 与 `L4Tunnel Server` 均运行在标准 TLS 之上，且客户端使用域名连接时均会自动携带 TLS SNI，因此**可通过 Nginx 四层 `stream` 模块的 `ssl_preread`，将 `L4Tunnel` 控制通道、`S5Tunnel` 入口以及常规 HTTPS 网站全部复用到公网唯一的 `443` 端口**，公网防火墙无需额外放行 `3007` 或 `3017`：
 
 1. **服务端配置**（仅本地监听，公网防火墙仅放行 `443`）：
-   - **家中 `S5Tunnel Server`（`s5ts.ini`）**：`bind_addr = 127.0.0.1:3017`
+   - **家中 `S5Tunnel Server`（`s5ts.ini`）**：`bind_addr = 127.0.0.1`、`bind_port = 3017`
    - **公网 VPS 的 `L4Tunnel Server`（`l4ts.ini`）**（无公网 IP 联动 L4Tunnel 时配置）：`bind_addr = 127.0.0.1`、`bind_port = 3007`（配合家中 `L4Tunnel Client` 将本地 `3017` 映射至公网 VPS 本机 `3017` 端口）
 2. **公网 Nginx 配置（`nginx.conf` 顶层 `stream` 块）**：
    ```nginx
@@ -241,9 +250,11 @@ docker run -d \
    - **随身电脑 `S5Tunnel Client`（`s5tc.ini`）**：
      ```ini
      [common]
-     local_addr = 127.0.0.1:1080
-     server_addr = s5t.yourdomain.com:443
+     server_addr = s5t.yourdomain.com
+     server_port = 443
      token = your_strong_s5t_token
+     local_addr = 127.0.0.1
+     local_port = 1080
      ```
 
 ---
@@ -254,7 +265,8 @@ docker run -d \
 
 ```ini
 [common]
-bind_addr = 0.0.0.0:3017
+bind_addr = 0.0.0.0
+bind_port = 3017
 token = 12345678
 # tls_cert_file = ./server.crt
 # tls_key_file = ./server.key
@@ -264,11 +276,14 @@ token = 12345678
 
 ```ini
 [common]
-local_addr = 127.0.0.1:1080
-# Linux 透明代理（配合 iptables/nftables REDIRECT，仅 Linux 有效）
-# redir_addr = 0.0.0.0:1081
-server_addr = 127.0.0.1:3017
+server_addr = 127.0.0.1
+server_port = 3017
 token = 12345678
+local_addr = 127.0.0.1
+local_port = 1080
+# Linux 透明代理（配合 iptables/nftables REDIRECT，仅 Linux 有效）
+# redir_addr = 0.0.0.0
+# redir_port = 1081
 ```
 
 ### PAC 分流规则 ([conf/pac.txt](conf/pac.txt))

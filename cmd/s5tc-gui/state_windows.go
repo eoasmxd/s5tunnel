@@ -13,7 +13,6 @@ type guiState struct {
 	Mode string `json:"mode"`
 }
 
-// resolveInitialMode 根据已保存的状态文件与 pac.txt 存在性决定启动时的初始代理模式。
 func resolveInitialMode(hasPAC bool, statePath string) proxyMode {
 	if saved, ok := loadSavedProxyMode(statePath); ok {
 		if saved == modePAC && !hasPAC {
@@ -39,7 +38,6 @@ func loadSavedProxyMode(path string) (proxyMode, bool) {
 	return parseProxyMode(st.Mode)
 }
 
-// saveProxyMode 将当前代理模式以原子方式写入同目录 JSON 状态文件。
 func saveProxyMode(path string, mode proxyMode) error {
 	data, err := json.MarshalIndent(guiState{Mode: formatProxyMode(mode)}, "", "  ")
 	if err != nil {

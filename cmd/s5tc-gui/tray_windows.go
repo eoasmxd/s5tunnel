@@ -128,7 +128,6 @@ type notifyIconDataW struct {
 
 var activeTray *trayApp
 
-// trayApp 封装纯 Win32 系统托盘图标、右键菜单与消息循环。
 type trayApp struct {
 	hwnd              uintptr
 	hIcon             uintptr

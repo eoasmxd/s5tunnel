@@ -12,7 +12,6 @@ import (
 	"strings"
 )
 
-// HasPACFile 检查配置对应的 pac.txt 文件是否存在且为普通文件。
 func HasPACFile(cfg ClientConfig) bool {
 	if strings.TrimSpace(cfg.PACFile) == "" {
 		return false
