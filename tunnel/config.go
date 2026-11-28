@@ -16,6 +16,7 @@ type ClientConfig struct {
 	RedirAddr  string
 	ServerAddr string
 	Token      string
+	TLSVerify  bool
 	PACFile    string
 }
 
@@ -53,11 +54,21 @@ func LoadClientConfig(path string) (ClientConfig, error) {
 		return ClientConfig{}, err
 	}
 
+	tlsVerify := false
+	if raw := strings.TrimSpace(sec["tls_verify"]); raw != "" {
+		v, err := strconv.ParseBool(raw)
+		if err != nil {
+			return ClientConfig{}, fmt.Errorf("invalid tls_verify: %s", raw)
+		}
+		tlsVerify = v
+	}
+
 	cfg := ClientConfig{
 		LocalAddr:  localAddr,
 		RedirAddr:  redirAddr,
 		ServerAddr: net.JoinHostPort(serverHost, strconv.Itoa(serverPort)),
 		Token:      sec["token"],
+		TLSVerify:  tlsVerify,
 		PACFile:    filepath.Join(filepath.Dir(path), "pac.txt"),
 	}
 	if cfg.LocalAddr == "" && cfg.RedirAddr == "" {

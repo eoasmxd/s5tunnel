@@ -279,6 +279,7 @@ token = 12345678
 server_addr = 127.0.0.1
 server_port = 3017
 token = 12345678
+# tls_verify = true
 local_addr = 127.0.0.1
 local_port = 1080
 # Linux 透明代理（配合 iptables/nftables REDIRECT，仅 Linux 有效）
