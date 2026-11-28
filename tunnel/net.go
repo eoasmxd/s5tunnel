@@ -35,7 +35,7 @@ func (c *bufConn) Read(p []byte) (int, error) {
 	return c.r.Read(p)
 }
 
-func ConnectServerWithTLS(addr string) (net.Conn, error) {
+func ConnectServerWithTLS(addr string, tlsVerify bool) (net.Conn, error) {
 	dialer := &net.Dialer{
 		Timeout:   defaultDialTimeout,
 		KeepAlive: defaultKeepAlive,
@@ -46,12 +46,7 @@ func ConnectServerWithTLS(addr string) (net.Conn, error) {
 	}
 
 	host, _, _ := net.SplitHostPort(addr)
-	tlsCfg := &tls.Config{
-		InsecureSkipVerify: true,
-	}
-	if net.ParseIP(host) == nil && host != "" {
-		tlsCfg.ServerName = host
-	}
+	tlsCfg := NewClientTLSConfig(host, tlsVerify)
 
 	tlsConn := tls.Client(rawConn, tlsCfg)
 	_ = tlsConn.SetDeadline(time.Now().Add(defaultDialTimeout))
@@ -61,6 +56,20 @@ func ConnectServerWithTLS(addr string) (net.Conn, error) {
 	}
 	_ = tlsConn.SetDeadline(time.Time{})
 	return tlsConn, nil
+}
+
+// NewClientTLSConfig 创建客户端 TLS 配置，支持按需启用服务端证书校验。
+// NewClientTLSConfig creates a client TLS configuration with optional server certificate verification.
+func NewClientTLSConfig(serverAddr string, tlsVerify bool) *tls.Config {
+	cfg := &tls.Config{
+		InsecureSkipVerify: !tlsVerify,
+	}
+	if serverAddr != "" {
+		if tlsVerify || net.ParseIP(serverAddr) == nil {
+			cfg.ServerName = serverAddr
+		}
+	}
+	return cfg
 }
 
 // NewServerTLSConfig 加载指定的 TLS 证书，未指定时在内存中自动生成自签名证书。

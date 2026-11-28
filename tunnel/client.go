@@ -135,7 +135,7 @@ func handleHTTPProxy(conn net.Conn, br *bufio.Reader, cfg ClientConfig) {
 }
 
 func dialTunnel(target string, cfg ClientConfig) (net.Conn, error) {
-	tlsConn, err := ConnectServerWithTLS(cfg.ServerAddr)
+	tlsConn, err := ConnectServerWithTLS(cfg.ServerAddr, cfg.TLSVerify)
 	if err != nil {
 		return nil, fmt.Errorf("connect server failed %s: %w", cfg.ServerAddr, err)
 	}
